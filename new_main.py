@@ -1,8 +1,9 @@
-from collections import defaultdict
+from new_srt_parser import TextEntry, parse_srt_file
 from dataclasses import dataclass
 from pathlib import Path
 import sqlite3
 import fugashi
+import re
 
 
 COMMON_DB_PATH = "data/index.db"
@@ -79,7 +80,7 @@ def search(
 	conn = sqlite3.connect(db_path)
 	c = conn.cursor()
 
-	splitter = fugashi.tagger() #type: ignore
+	splitter = fugashi.Tagger() #type: ignore
 	splitted_search: list[str] = splitter(search)
 
 	querry = f"""
@@ -129,9 +130,68 @@ def search(
 
 	return results
 
+def get_metadata(srt_path, root_path) -> dict:
+	# what needs
+	# 1. get the relative path
+	# 2. get show name/season
+	# 3. get episode number
+
+	# 1. relative
+	relative_path = Path(srt_path).relative_to(root_path)
+
+	# 2. get show name/season
+
+	show_match = re.match(r"([^(]+)\((\d+)\)", str(relative_path.parent))
+
+	if not show_match:
+		show = None
+		season = None
+	else:
+		show = show_match.group(1)
+		season = show_match.group(2)
+	
+	ep = relative_path.stem
+
+	return {"show": show, "season": season, "episode": ep}
+
 def build_index(root_path: str = COMMON_SUB_PATH) -> list[WordEntry]:
 	index: list[WordEntry] = []
 
+	splitter = fugashi.Tagger() #type: ignore
+	
+	# what needs to be done:
+	# 1. get all srt file directorys
+	# 2. loop through each, parsing the file and getting metadata
+	# 3. add to index as a WordEntry
 
+	# 1. get all srt file directorys
+	subtitle_dir = Path(root_path)
+
+	srt_files = list(subtitle_dir.rglob("*.srt"))
+
+	# 2. loop through each, parsing the file and getting metadata
+	for file in srt_files:
+		text_entries = parse_srt_file(str(file))
+
+		metadata = get_metadata(file, root_path)
+
+		for tex in text_entries:
+			words = splitter(tex.text)
+
+			for word in words:
+				index.append(WordEntry(
+					word=word,
+					text=tex.text,
+					show=metadata["show"],
+					start=tex.start,
+					end=tex.end,
+					season=metadata["season"],
+					episode=metadata["episode"]
+				))
 
 	return index
+
+if __name__ == "__main__":
+	index = build_index()
+
+	save_index_to_db(index)
