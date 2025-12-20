@@ -10,7 +10,7 @@ class TextEntry:
 	end: str
 
 def parse_srt_block(srt_block: str) -> TextEntry|None:
-	srt_match = re.match(r'(.+)\n(\d\d:\d\d:\d\d,\d\d\d)\s*-->\s*(\d\d:\d\d:\d\d,\d\d\d)\n+(.*)', srt_block.strip())
+	srt_match = re.search(r'(.+)\n(\d\d:\d\d:\d\d,\d\d\d)\s*-->\s*(\d\d:\d\d:\d\d,\d\d\d)\n+(.*)', srt_block.strip())
 
 	if not srt_match:
 		print(f"ValueError: Srt block doesnt match the srt format, double check it:\n{srt_block}\n---\n{repr(srt_block)}")
@@ -26,15 +26,16 @@ def parse_srt_file(file_path: str) -> list[TextEntry]:
 	with open(file_path, 'r', encoding="utf-8-sig") as f:
 		file_contence = f.read()
 
-	srt_blocks = re.split(r'\n\n+', file_contence)
+	srt_blocks = re.split(r'\n\n+', file_contence.strip())
 	
 	result = []
 	
 	for block in srt_blocks:
-		parsed = parse_srt_block(block)
+		parsed = parse_srt_block(block.strip())
 		if parsed is not None: result.append(parsed)
 
 	return result
 
 if __name__ == "__main__":
-	parse_srt_file("subtitles/Vinland Saga/11.srt")
+	things = parse_srt_file("subtitles/Vinland Saga/1.srt")
+	[print(thing) for thing in things[:5]]
