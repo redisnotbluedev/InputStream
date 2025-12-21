@@ -237,7 +237,7 @@ def build_on_database(root_path: str = COMMON_SUB_PATH, db_path: str = COMMON_DB
 if __name__ == "__main__":
 	
 	print("=== Starting search ===")
-	result = search("私")
+	result = search("私は")
 	print(f"result:")
 	for we in result[:5]:
 		print(we)
