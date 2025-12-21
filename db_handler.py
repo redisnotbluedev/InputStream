@@ -1,4 +1,4 @@
-from new_srt_parser import TextEntry, parse_srt_file
+from srt_parser import TextEntry, parse_srt_file
 from dataclasses import dataclass
 import janome.tokenizer as t
 from pathlib import Path
@@ -8,6 +8,7 @@ import re
 
 COMMON_DB_PATH = "data/index.db"
 COMMON_SUB_PATH = "subtitles"
+Tokenizer = t.Tokenizer()
 
 @dataclass
 class WordEntry:
@@ -22,7 +23,7 @@ class WordEntry:
 def tokenize(string: str) -> list[str]:
 	return [
 		token.surface if isinstance(token, t.Token) else token 
-		for token in t.Tokenizer().tokenize(string)
+		for token in Tokenizer.tokenize(string)
 		]
 
 def ready_database(db_path: str):
@@ -38,7 +39,7 @@ def ready_database(db_path: str):
 	season INTEGER NOT NULL,
 	episode INTEGER NOT NULL)"""
 
-	word_to_index = """CREATE TABEL IF NOT EXISTS word_to_index (
+	word_to_index = """CREATE TABLE IF NOT EXISTS word_to_index (
 	word TEXT NOT NULL,
 	subtitle_id INTEGER NOT NULL,
 	FOREIGN KEY(subtitle_id) REFERENCES subtitles(id)
@@ -62,14 +63,10 @@ def save_index_to_db(index: list[WordEntry], db_path: str = COMMON_DB_PATH):
 	conn = sqlite3.connect(db_path)
 	c = conn.cursor()
 
-	for idx, entry in enumerate(index):
-		c.execute(
-			"INSERT INTO index_to_subtitle (id, text, start, end, show, season, episode) VALUES (?, ?, ?, ?, ?, ?, ?)",
-			(idx, entry.text, entry.start, entry.end, entry.show, entry.season, entry.episode))
-		
-		c.execute(
-			"INSERT INTO word_to_index (word, subtitle_id) VALUES (?, ?)", 
-			(entry.word, idx))
+	c.executemany(
+		"""INSERT INTO index_to_subtitle (id, text, start, end, show, season, episode) VALUES (?, ?, ?, ?, ?, ?, ?)
+		INSERT INTO word_to_index (word, subtitle_id) VALUES (?, ?)""",
+		[(idx, entry.text, entry.start, entry.end, entry.show, entry.season, entry.episode, entry.word, idx) for idx, entry in enumerate(index)])
 	
 	conn.commit()
 	conn.close()
@@ -91,9 +88,10 @@ def search(
 	querry = f"""
 	SELECT DISTINCT s.*
 	FROM index_to_subtitle s
-	{[f'INNER JOIN word_to_index w{i} ON s.id = w{i}.subtitle_id' for i in range(len(splitted_search))]}
-	WHERE {' AND '.join([f'w{i}.word ?' for i in range(len(splitted_search))])}
+	{' '.join([f'INNER JOIN word_to_index w{i} ON s.id = w{i}.subtitle_id' for i in range(len(splitted_search))])}
+	WHERE {' AND '.join([f'w{i}.word = ?' for i in range(len(splitted_search))])}
 	"""
+
 	parameters = splitted_search
 	# if you are wondering why i dont just put the search right in the string instead of making them question marks, adding an intermediate step where failure can happen.
 	# Fuck you.
@@ -146,18 +144,18 @@ def get_metadata(srt_path, root_path) -> dict:
 
 	# 2. get show name/season
 
-	show_match = re.match(r"([^(]+)\((\d+)\)", str(relative_path.parent))
+	show_match = re.match(r"([^(]+)\(?(\d+)?\)?", str(relative_path.parent))
 
 	if not show_match:
 		show = None
 		season = None
 	else:
 		show = show_match.group(1)
-		season = show_match.group(2)
+		season = show_match.group(2) if show_match.group(2) is not None else "1"
 	
 	ep = relative_path.stem
 
-	return {"show": show, "season": season, "episode": ep}
+	return {"show": show, "season": int(season) if season is not None else season, "episode": int(ep)}
 
 def build_index(root_path: str = COMMON_SUB_PATH) -> list[WordEntry]:
 	index: list[WordEntry] = []
@@ -183,18 +181,63 @@ def build_index(root_path: str = COMMON_SUB_PATH) -> list[WordEntry]:
 
 			for word in words:
 				index.append(WordEntry(
-					word=word,
-					text=tex.text,
-					show=metadata["show"],
-					start=tex.start,
-					end=tex.end,
-					season=metadata["season"],
+					word=	word,
+					text=	tex.text,
+					show=	metadata["show"],
+					start=	tex.start,
+					end=	tex.end,
+					season=	metadata["season"],
 					episode=metadata["episode"]
 				))
 
 	return index
 
-if __name__ == "__main__":
-	index = build_index()
+def build_on_database(root_path: str = COMMON_SUB_PATH, db_path: str = COMMON_DB_PATH):
+	Path(db_path).parent.mkdir(parents=True, exist_ok=True)
 
-	save_index_to_db(index)
+	if Path(db_path).exists():
+		Path(db_path).unlink()
+	
+	ready_database(db_path)
+
+	subtitle_dir = Path(root_path)
+	srt_files = list(subtitle_dir.rglob('*.srt'))
+
+	conn = sqlite3.connect(db_path)
+	c = conn.cursor()
+
+	idx = 0
+
+	for file in srt_files:
+		text_entries = parse_srt_file(str(file))
+		metadata = get_metadata(file, root_path)
+
+		subtitles = [(idx + i, te.text, te.start, te.end, metadata["show"], metadata["season"], metadata["episode"]) for i, te in enumerate(text_entries)]
+
+		idx += len(subtitles)
+
+		c.executemany(
+			"INSERT INTO index_to_subtitle (id, text, start, end, show, season, episode) VALUES (?, ?, ?, ?, ?, ?, ?)",
+			subtitles)
+		
+		words = []
+		for sub in subtitles:
+			tokens = tokenize(sub[1])
+
+			words += [(word, sub[0]) for word in tokens]
+		
+		c.executemany(
+			"INSERT INTO word_to_index (word, subtitle_id) VALUES (?, ?)", 
+			words)
+	
+	conn.commit()
+	conn.close()
+
+
+if __name__ == "__main__":
+	
+	print("=== Starting search ===")
+	result = search("私")
+	print(f"result:")
+	for we in result[:5]:
+		print(we)
