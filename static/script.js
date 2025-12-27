@@ -1,4 +1,5 @@
 const resultsContainer = document.getElementById("results");
+const paginationContainer = document.getElementById("pagination");
 const searchForm = document.getElementById("searchForm");
 const searchQuery = document.getElementById("searchQuery");
 
@@ -34,6 +35,7 @@ async function getData(page, perPage) {
 }
 
 function displayResults(results, tokens) {
+	resultsContainer.innerHTML = "";
 	results.forEach(result => {
 		const item = document.createElement("li");
 
@@ -58,11 +60,43 @@ function displayResults(results, tokens) {
 	});
 }
 
+function displayPagination(data) {
+	paginationContainer.innerHTML = "";
+	if (currentPage > 1) {
+		const prevButton = document.createElement("button");
+		prevButton.textContent = "Previous";
+		prevButton.onclick = () => {
+			currentPage--;
+			loadPage();
+		};
+		paginationContainer.appendChild(prevButton);
+	}
+
+	const pageNumber = document.createElement("span");
+	pageNumber.innerText = `Page ${currentPage}`;
+	paginationContainer.appendChild(pageNumber);
+
+	if (data.has_more) {
+		const nextButton = document.createElement("button");
+		nextButton.textContent = "Next";
+		nextButton.onclick = () => {
+			currentPage++;
+			loadPage();
+		};
+		paginationContainer.appendChild(nextButton);
+	}
+}
+
+async function loadPage() {
+	const data = await getData(currentPage, currentPerPage);
+	displayResults(data.results, data.query_tokens);
+	displayPagination(data);
+}
+
 searchForm.addEventListener("submit", async event => {
 	event.preventDefault();
 	currentQuery = searchQuery.value;
 	currentPage = 1;
 
-	const data = await getData(currentPage, currentPerPage);
-	displayResults(data.results, data.query_tokens);
+	loadPage();
 });
