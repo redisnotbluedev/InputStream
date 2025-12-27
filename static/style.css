@@ -1,0 +1,67 @@
+.results li { margin-bottom: 16px; }
+
+.results {
+	list-style-type: none;
+	padding: 8px;
+	overflow: auto;
+	flex: 1;
+	opacity: 1;
+	transition: opacity 0.5s ease-in-out;
+}
+
+.search {
+	display: flex;
+	width: fit-content;
+	align-items: center;
+	gap: 8px;
+	z-index: 1;
+	transform: translate(0, 0) rotateY(0deg);
+	transition: transform 0.5s ease-in-out;
+}
+
+.hero {
+	display: none;
+	flex-direction: column;
+	align-items: center;
+	width: 100%;
+}
+
+/* 80px is the header height */
+.hero { transform: translateY(calc((50vh - 80px) - 50% - 8px)); }
+
+main {
+	position: relative;
+}
+
+main:has(.results:empty) .search {
+	transform: translate(
+		/* 80px is the header height */
+		calc(50vw - 50%),
+		calc((50vh - 80px) - 50%)
+	) rotateY(360deg);
+}
+
+main:has(.results:empty) .results {
+	opacity: 0;
+}
+
+main:has(.results:empty) hr {
+	/* Too lazy to do this with JS */
+	display: none;
+}
+
+main:has(.results:empty) .hero {
+	display: flex;
+}
+
+.pagination {
+	padding: 8px;
+	display: flex;
+	gap: 8px;
+	align-items: center;
+	justify-content: center;
+}
+
+.result-match { background: var(--primary-a0); }
+.result-text { padding-left: 16px; }
+.result-time { color: var(--text-small); }

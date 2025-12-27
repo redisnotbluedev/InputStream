@@ -2,17 +2,30 @@
 <html>
 	<head>
 		<title>InputStream</title>
+		<link href="{{ url_for('static', filename='style.css') }}" rel="stylesheet">
+		<link href="{{ url_for('static', filename='theme.css') }}" rel="stylesheet">
 	</head>
 	<body>
-		<h1>InputStream</h1>
-		<form id="searchForm">
-			<input type="text" id="searchQuery" placeholder="Search..."> 
-			<button type="submit">Search</button>
-		</form>
-		<hr>
+		<header>
+			<h1>InputStream</h1>
+		</header>
 
-		<ol id="results"></ol>
-		<div id="pagination"></div>
+		<main>
+			<div class="hero">
+				<h2>InputStream</h2>
+				<p>InputStream is a powerful tool that searches through captions in all your favourite movies and videos.</p>
+			</div>
+
+			<form id="searchForm" class="search">
+				<input type="text" id="searchQuery" placeholder="Search..."> 
+				<button type="submit">Search</button>
+			</form>
+
+			<hr>
+
+			<ol id="results" class="results"></ol>
+			<div id="pagination" class="pagination"></div>
+		</main>
 
 		<script src="{{ url_for('static', filename='script.js') }}"></script>
 	</body>
