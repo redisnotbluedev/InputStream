@@ -2,15 +2,18 @@
 <html>
 	<head>
 		<title>InputStream</title>
-		<script src="{{ url_for('static', filename='script.js') }}"></script>
 	</head>
 	<body>
-		<h1>Input Stream</h1>
-		<input type="text" id="search_query" placeholder="Search..."> 
-		<button type="button" onclick="search()">Search</button>
+		<h1>InputStream</h1>
+		<form id="searchForm">
+			<input type="text" id="searchQuery" placeholder="Search..."> 
+			<button type="submit">Search</button>
+		</form>
 		<hr>
 
-		<div id="resultsDiv"></div>
-		<div id="paginationDiv" class="paginationDiv"></div>
+		<ol id="results"></ol>
+		<div id="paginationDiv" class="pagination"></div>
+
+		<script src="{{ url_for('static', filename='script.js') }}"></script>
 	</body>
 </html>

@@ -91,6 +91,7 @@ def search(
 	{' '.join([f'INNER JOIN word_to_index w{i} ON s.id = w{i}.subtitle_id' for i in range(len(splitted_search))])}
 	WHERE {' AND '.join([f'w{i}.word = ?' for i in range(len(splitted_search))])}
 	"""
+	# dude you mispelt "query"
 
 	parameters = splitted_search
 	# if you are wondering why i dont just put the search right in the string instead of making them question marks, adding an intermediate step where failure can happen.
