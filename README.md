@@ -8,19 +8,35 @@ So if anyone has time to help me set it up, please do contact me
 ## Setup
 
 1. Clone the repository
-   `git clone https://github.com/nissemanen/InputStream.git` or select Code → Download ZIP → extract it
-2. Prepare the environment
+   ```bash
+   git clone https://github.com/nissemanen/InputStream.git
+   ```
+   or select Code → Download ZIP → extract it
+
+2. Navigate to the project directory and create a virtual environment
    ```bash
    cd InputStream
-   python3 -m venv .venv`
-   Linux:
+   python3 -m venv .venv
+   ```
+
+3. Activate the virtual environment
+   
+   **Linux/macOS:**
    ```bash
    source .venv/bin/activate
    ```
-   Windows:
+   
+   **Windows:**
    ```batch
-   .\.venv\Scripts\Activate```
-3. Install packages
-   `pip install -r requirements.txt`
-4. Run
-   `python3 app.py`
+   .\.venv\Scripts\Activate
+   ```
+
+4. Install packages
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+5. Run the application
+   ```bash
+   python3 app.py
+   ```
